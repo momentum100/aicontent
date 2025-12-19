@@ -126,7 +126,11 @@
                     <div x-show="result" class="mt-8 border-t pt-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-medium">Result</h3>
-                            <span class="text-sm text-gray-500" x-text="'Cost: $' + parseFloat(result?.cost || 0).toFixed(6)"></span>
+                            <div class="flex items-center gap-2">
+                                <span x-show="result?.model" class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" x-text="'Img: ' + result?.model?.name"></span>
+                                <span x-show="result?.text_model" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" x-text="'Txt: ' + result?.text_model?.name"></span>
+                                <span class="text-sm text-gray-500" x-text="'Cost: $' + parseFloat(result?.cost || 0).toFixed(6)"></span>
+                            </div>
                         </div>
 
                         <div x-show="result?.title" class="mb-4">
@@ -180,12 +184,14 @@
                     <div class="space-y-2">
                         <template x-for="gen in history" :key="gen.id">
                             <div class="border rounded px-3 py-2 flex items-center justify-between gap-4">
-                                <div class="flex items-center gap-4 min-w-0">
+                                <div class="flex items-center gap-4 min-w-0 flex-wrap">
                                     <span class="font-medium truncate" x-text="gen.recipe_name"></span>
                                     <span class="text-xs text-gray-400 whitespace-nowrap" x-text="new Date(gen.created_at).toLocaleDateString()"></span>
                                     <span class="text-xs text-gray-400 whitespace-nowrap" x-text="'$' + parseFloat(gen.cost || 0).toFixed(4)"></span>
+                                    <span x-show="gen.model" class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded whitespace-nowrap" x-text="'Img: ' + gen.model?.name"></span>
+                                    <span x-show="gen.text_model" class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded whitespace-nowrap" x-text="'Txt: ' + gen.text_model?.name"></span>
                                 </div>
-                                <div class="flex gap-1">
+                                <div class="flex gap-1 flex-shrink-0">
                                     <button @click="toggleShare(gen)" class="text-xs px-2 py-1 rounded"
                                         :class="gen.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                                         x-text="gen.is_public ? 'Shared' : 'Share'"></button>

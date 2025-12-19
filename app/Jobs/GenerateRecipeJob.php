@@ -48,12 +48,14 @@ class GenerateRecipeJob implements ShouldQueue
 
             $title = null;
             $ingredients = null;
+            $textModelId = null;
 
             if ($this->titlePromptId) {
                 $titlePrompt = Prompt::findOrFail($this->titlePromptId);
                 $textModel = AiModel::active()->text()->default()->first();
 
                 if ($textModel) {
+                    $textModelId = $textModel->id;
                     $titleResult = $textService->generate(
                         $generation->recipe_name,
                         $textModel,
@@ -70,6 +72,7 @@ class GenerateRecipeJob implements ShouldQueue
                 $textModel = AiModel::active()->text()->default()->first();
 
                 if ($textModel) {
+                    $textModelId = $textModel->id;
                     $ingredientsResult = $textService->generate(
                         $generation->recipe_name,
                         $textModel,
@@ -90,6 +93,7 @@ class GenerateRecipeJob implements ShouldQueue
                 'instructions' => $imageResult['instructions'] ?? null,
                 'tokens_used' => $totalTokens,
                 'cost' => $totalCost,
+                'text_model_id' => $textModelId,
                 'status' => 'completed',
             ]);
 

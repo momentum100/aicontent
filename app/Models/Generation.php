@@ -16,6 +16,7 @@ class Generation extends Model
         'user_id',
         'recipe_name',
         'model_id',
+        'text_model_id',
         'prompt_id',
         'title_prompt_id',
         'ingredients_prompt_id',
@@ -60,6 +61,11 @@ class Generation extends Model
     public function model(): BelongsTo
     {
         return $this->belongsTo(AiModel::class, 'model_id');
+    }
+
+    public function textModel(): BelongsTo
+    {
+        return $this->belongsTo(AiModel::class, 'text_model_id');
     }
 
     public function prompt(): BelongsTo

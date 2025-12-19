@@ -18,7 +18,7 @@ class GenerationController extends Controller
     {
         $generations = $request->user()
             ->generations()
-            ->with(['model', 'prompt'])
+            ->with(['model', 'textModel', 'prompt'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -31,7 +31,7 @@ class GenerationController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $generation->load(['model', 'prompt', 'titlePrompt', 'ingredientsPrompt']);
+        $generation->load(['model', 'textModel', 'prompt', 'titlePrompt', 'ingredientsPrompt']);
 
         return response()->json($generation);
     }
@@ -65,7 +65,7 @@ class GenerationController extends Controller
             $validated['ingredients_prompt_id'] ?? null
         );
 
-        return response()->json($generation->load(['model', 'prompt']));
+        return response()->json($generation->load(['model', 'textModel', 'prompt']));
     }
 
     public function status(Request $request, Generation $generation): JsonResponse

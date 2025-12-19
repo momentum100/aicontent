@@ -17,9 +17,9 @@
                     <p class="text-gray-500 text-sm mb-6">Shared recipe visualization</p>
 
                     @if($generation->images && count($generation->images) > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="space-y-4 mb-6">
                         @foreach($generation->images as $image)
-                        <img src="{{ Storage::url($image) }}" alt="Recipe image" class="rounded-lg shadow-md w-full h-48 object-cover">
+                        <img src="{{ Storage::url($image) }}" alt="Recipe image" class="rounded-lg shadow-md w-full h-auto">
                         @endforeach
                     </div>
                     @endif
