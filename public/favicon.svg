@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="plate" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="food" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fb923c"/>
+      <stop offset="100%" style="stop-color:#ea580c"/>
+    </linearGradient>
+  </defs>
+  <!-- Plate -->
+  <ellipse cx="32" cy="36" rx="26" ry="18" fill="url(#plate)" stroke="#cbd5e1" stroke-width="2"/>
+  <ellipse cx="32" cy="36" rx="18" ry="12" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+  <!-- Food/dish representation -->
+  <ellipse cx="32" cy="34" rx="12" ry="8" fill="url(#food)"/>
+  <ellipse cx="32" cy="32" rx="10" ry="6" fill="#fdba74"/>
+  <!-- AI sparkle -->
+  <g fill="#6366f1">
+    <path d="M52 12l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z"/>
+    <path d="M12 8l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/>
+    <path d="M48 4l.75 1.5 1.5.75-1.5.75-.75 1.5-.75-1.5-1.5-.75 1.5-.75z"/>
+  </g>
+</svg>
