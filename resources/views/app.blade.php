@@ -174,10 +174,11 @@
 
                         <div x-show="result && result.images && result.images.length > 0" class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3">
                             <template x-for="(image, index) in (result?.images || [])" :key="image">
-                                <div class="relative group">
+                                <div class="relative">
                                     <img :src="'/storage/' + image" class="rounded-lg shadow-md w-full h-auto" :alt="'Image ' + (index + 1)">
                                     <button @click="deleteImage(result.id, image)"
-                                        class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">
+                                        class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-md cursor-pointer"
+                                        title="Delete image">
                                         ×
                                     </button>
                                 </div>
