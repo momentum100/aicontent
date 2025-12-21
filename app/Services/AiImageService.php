@@ -105,7 +105,7 @@ class AiImageService implements ImageGeneratorInterface
         $logPath = $this->saveRawResponseLog($data);
 
         return [
-            'images' => $images,
+            'images' => array_values(array_unique($images)),
             'instructions' => $textContent,
             'tokens_used' => $tokensUsed,
             'cost' => $cost,
