@@ -10,6 +10,7 @@ use App\Models\Prompt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class GenerationController extends Controller
 {
@@ -111,6 +112,37 @@ class GenerationController extends Controller
             'is_public' => true,
             'share_url' => $generation->getShareUrl(),
             'share_token' => $generation->share_token,
+        ]);
+    }
+
+    public function deleteImage(Request $request, Generation $generation): JsonResponse
+    {
+        if ($generation->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $validated = $request->validate([
+            'image_path' => 'required|string',
+        ]);
+
+        $imagePath = $validated['image_path'];
+        $images = $generation->images ?? [];
+
+        if (!in_array($imagePath, $images)) {
+            return response()->json(['message' => 'Image not found'], 404);
+        }
+
+        // Remove from array
+        $images = array_values(array_filter($images, fn($img) => $img !== $imagePath));
+        $generation->images = $images;
+        $generation->save();
+
+        // Delete file from storage
+        Storage::disk('public')->delete($imagePath);
+
+        return response()->json([
+            'message' => 'Image deleted',
+            'images' => $images,
         ]);
     }
 

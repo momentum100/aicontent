@@ -173,8 +173,14 @@
                         </div>
 
                         <div x-show="result && result.images && result.images.length > 0" class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3">
-                            <template x-for="(image, index) in (result?.images || [])" :key="index">
-                                <img :src="'/storage/' + image" class="rounded-lg shadow-md w-full h-auto" :alt="'Image ' + (index + 1)">
+                            <template x-for="(image, index) in (result?.images || [])" :key="image">
+                                <div class="relative group">
+                                    <img :src="'/storage/' + image" class="rounded-lg shadow-md w-full h-auto" :alt="'Image ' + (index + 1)">
+                                    <button @click="deleteImage(result.id, image)"
+                                        class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">
+                                        ×
+                                    </button>
+                                </div>
                             </template>
                         </div>
                     </div>
@@ -793,6 +799,30 @@
                         }
                     });
                     await this.loadHistory();
+                },
+
+                async deleteImage(generationId, imagePath) {
+                    if (!confirm('Delete this image?')) return;
+                    try {
+                        const res = await fetch(`/api/generations/${generationId}/image`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({ image_path: imagePath })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.result.images = data.images;
+                            this.showToast('Image deleted', 'success');
+                        } else {
+                            const data = await res.json();
+                            this.showToast(data.message || 'Failed to delete image', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to delete image', 'error');
+                    }
                 },
 
                 async saveModel() {
