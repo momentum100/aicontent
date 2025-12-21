@@ -526,7 +526,7 @@
                         await this.loadUsers();
                     } else {
                         const data = await res.json();
-                        alert(data.message || 'Failed to create user');
+                        this.showToast(data.message || 'Failed to create user', 'error');
                     }
                 },
 
@@ -542,7 +542,7 @@
                         user.is_active = data.is_active;
                     } else {
                         const data = await res.json();
-                        alert(data.message || 'Failed to update user');
+                        this.showToast(data.message || 'Failed to update user', 'error');
                     }
                 },
 
@@ -558,7 +558,7 @@
                         await this.loadUsers();
                     } else {
                         const data = await res.json();
-                        alert(data.message || 'Failed to delete user');
+                        this.showToast(data.message || 'Failed to delete user', 'error');
                     }
                 },
 
@@ -583,7 +583,7 @@
                             this.pollStatus(generation.id);
                         }
                     } catch (e) {
-                        alert('Generation failed');
+                        this.showToast('Generation failed', 'error');
                         this.loading = false;
                     }
                 },
@@ -642,7 +642,7 @@
                     gen.is_public = data.is_public;
                     if (data.share_url) {
                         await this.copyToClipboard(data.share_url);
-                        alert('Share URL copied to clipboard!');
+                        this.showToast('Share URL copied to clipboard!', 'success');
                     }
                 },
 
