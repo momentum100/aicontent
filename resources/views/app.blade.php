@@ -364,16 +364,26 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Prompt</label>
-                                <select x-model="experimentForm.prompt_id" required
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Load Prompt Template</label>
+                                <select x-model="experimentForm.prompt_id" @change="loadPromptContent()"
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="">Select a prompt...</option>
                                     <template x-for="prompt in prompts" :key="prompt.id">
                                         <option :value="prompt.id" x-text="prompt.name + ' (' + prompt.type + ')'"></option>
                                     </template>
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" :disabled="experimentLoading"
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Prompt Content
+                                <span class="text-gray-400 font-normal">(use @{{recipe_name}} as placeholder)</span>
+                            </label>
+                            <textarea x-model="experimentForm.prompt_content" required rows="6"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm"
+                                placeholder="Enter or load a prompt..."></textarea>
+                        </div>
+                        <button type="submit" :disabled="experimentLoading || !experimentForm.prompt_content"
                             class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             <span x-show="!experimentLoading">Run Experiment</span>
                             <span x-show="experimentLoading">Running...</span>
@@ -534,7 +544,7 @@
                 queueStats: { pending: 0, processing: 0 },
                 toast: null,
                 experiments: [],
-                experimentForm: { recipe_name: '', prompt_id: null, model_id: null },
+                experimentForm: { recipe_name: '', prompt_id: null, model_id: null, prompt_content: '' },
                 experimentResult: null,
                 experimentLoading: false,
 
@@ -642,6 +652,13 @@
                         }
                     });
                     await this.loadExperiments();
+                },
+
+                loadPromptContent() {
+                    const prompt = this.prompts.find(p => p.id == this.experimentForm.prompt_id);
+                    if (prompt) {
+                        this.experimentForm.prompt_content = prompt.content;
+                    }
                 },
 
                 async loadLogs() {

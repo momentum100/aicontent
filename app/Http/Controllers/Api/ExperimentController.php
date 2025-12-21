@@ -31,25 +31,26 @@ class ExperimentController extends Controller
     {
         $validated = $request->validate([
             'recipe_name' => 'required|string|max:255',
-            'prompt_id' => 'required|exists:prompts,id',
+            'prompt_id' => 'nullable|exists:prompts,id',
             'model_id' => 'required|exists:ai_models,id',
+            'prompt_content' => 'required|string',
         ]);
 
-        $prompt = Prompt::findOrFail($validated['prompt_id']);
         $model = AiModel::findOrFail($validated['model_id']);
 
         try {
-            $result = $this->textService->generate(
+            $result = $this->textService->generateWithContent(
                 $validated['recipe_name'],
                 $model,
-                $prompt
+                $validated['prompt_content']
             );
 
             $experiment = PromptExperiment::create([
                 'user_id' => $request->user()->id,
-                'prompt_id' => $prompt->id,
+                'prompt_id' => $validated['prompt_id'] ?? null,
                 'model_id' => $model->id,
                 'recipe_name' => $validated['recipe_name'],
+                'prompt_content' => $validated['prompt_content'],
                 'output' => $result['text'],
                 'tokens_used' => $result['tokens_used'],
                 'cost' => $result['cost'],

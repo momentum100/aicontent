@@ -16,6 +16,7 @@ class PromptExperiment extends Model
         'prompt_id',
         'model_id',
         'recipe_name',
+        'prompt_content',
         'output',
         'tokens_used',
         'cost',
