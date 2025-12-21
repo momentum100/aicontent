@@ -120,10 +120,9 @@
                             </div>
                         </div>
 
-                        <button type="submit" :disabled="loading"
-                            class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span x-show="!loading">Generate Recipe</span>
-                            <span x-show="loading">Generating...</span>
+                        <button type="submit"
+                            class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">
+                            Generate Recipe
                         </button>
                     </form>
 
@@ -702,8 +701,6 @@
                 },
 
                 async generate() {
-                    this.loading = true;
-                    this.result = null;
                     try {
                         const res = await fetch('/api/generate', {
                             method: 'POST',
@@ -714,8 +711,9 @@
                             body: JSON.stringify(this.form)
                         });
                         const generation = await res.json();
-                        this.result = generation;
                         await this.loadHistory();
+                        await this.loadQueueStats();
+                        this.showToast('Job added to queue', 'success');
 
                         // Poll for completion
                         if (generation.status === 'processing') {
@@ -723,7 +721,6 @@
                         }
                     } catch (e) {
                         this.showToast('Generation failed', 'error');
-                        this.loading = false;
                     }
                 },
 
@@ -738,7 +735,6 @@
                                 const fullRes = await fetch(`/api/generations/${generationId}`);
                                 this.result = await fullRes.json();
                                 await this.loadHistory();
-                                this.loading = false;
                                 await this.loadQueueStats();
 
                                 if (data.status === 'completed') {
@@ -750,9 +746,7 @@
                                 await this.loadQueueStats();
                                 setTimeout(poll, 2000);
                             }
-                        } catch (e) {
-                            this.loading = false;
-                        }
+                        } catch (e) {}
                     };
                     poll();
                 },
