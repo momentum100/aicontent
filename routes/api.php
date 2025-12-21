@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DefaultsController;
+use App\Http\Controllers\Api\ExperimentController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\ModelController;
 use App\Http\Controllers\Api\PromptController;
@@ -21,6 +22,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('prompts/{prompt}/toggle-active', [PromptController::class, 'toggleActive']);
 
     Route::get('defaults', [DefaultsController::class, 'index']);
+
+    Route::get('experiments', [ExperimentController::class, 'index']);
+    Route::post('experiments', [ExperimentController::class, 'generate']);
+    Route::delete('experiments/{experiment}', [ExperimentController::class, 'destroy']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {

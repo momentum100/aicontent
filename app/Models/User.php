@@ -49,6 +49,11 @@ class User extends Authenticatable
         return $this->hasMany(Generation::class);
     }
 
+    public function promptExperiments(): HasMany
+    {
+        return $this->hasMany(PromptExperiment::class);
+    }
+
     public function actionLogs(): HasMany
     {
         return $this->hasMany(ActionLog::class);

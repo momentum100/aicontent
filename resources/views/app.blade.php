@@ -36,6 +36,11 @@
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                         Prompts
                     </button>
+                    <button @click="currentTab = 'playground'"
+                        :class="currentTab === 'playground' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Playground
+                    </button>
                     @if(auth()->user()->isAdmin())
                     <button @click="currentTab = 'logs'"
                         :class="currentTab === 'logs' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
@@ -330,6 +335,89 @@
                 </div>
             </div>
 
+            <!-- Playground Tab -->
+            <div x-show="currentTab === 'playground'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium mb-4">Prompt Playground</h3>
+
+                    <!-- Experiment Form -->
+                    <form @submit.prevent="runExperiment()" class="mb-6 p-4 border rounded-lg bg-gray-50">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
+                                <input type="text" x-model="experimentForm.recipe_name" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="Enter recipe name...">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Text Model</label>
+                                <select x-model="experimentForm.model_id" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <template x-for="model in defaults.models?.text" :key="model.id">
+                                        <option :value="model.id" x-text="model.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Prompt</label>
+                                <select x-model="experimentForm.prompt_id" required
+                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <template x-for="prompt in prompts" :key="prompt.id">
+                                        <option :value="prompt.id" x-text="prompt.name + ' (' + prompt.type + ')'"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" :disabled="experimentLoading"
+                            class="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!experimentLoading">Run Experiment</span>
+                            <span x-show="experimentLoading">Running...</span>
+                        </button>
+                    </form>
+
+                    <!-- Current Result -->
+                    <div x-show="experimentResult" class="mb-6 p-4 border rounded-lg">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-medium">Latest Result</h4>
+                            <div class="flex items-center gap-2">
+                                <span x-show="experimentResult?.model" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" x-text="experimentResult?.model?.name"></span>
+                                <span class="text-xs text-gray-500" x-text="'$' + parseFloat(experimentResult?.cost || 0).toFixed(6)"></span>
+                                <button @click="copyToClipboard(experimentResult?.output)" class="text-gray-400 hover:text-gray-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded whitespace-pre-wrap text-sm" x-text="experimentResult?.output"></div>
+                    </div>
+
+                    <!-- Experiment History -->
+                    <h4 class="font-medium mb-2">Experiment History</h4>
+                    <div class="space-y-2">
+                        <template x-for="exp in experiments" :key="exp.id">
+                            <div class="border rounded p-3">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-xs text-gray-400 font-mono" x-text="'#' + exp.id"></span>
+                                        <span class="font-medium" x-text="exp.recipe_name"></span>
+                                        <span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded" x-text="exp.prompt?.name"></span>
+                                        <span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded" x-text="exp.model?.name"></span>
+                                        <span class="text-xs text-gray-400" x-text="'$' + parseFloat(exp.cost || 0).toFixed(6)"></span>
+                                        <span class="text-xs text-gray-400" x-text="new Date(exp.created_at).toLocaleString()"></span>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button @click="copyToClipboard(exp.output)" class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">Copy</button>
+                                        <button @click="deleteExperiment(exp.id)" class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">Del</button>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 p-2 rounded text-sm whitespace-pre-wrap max-h-32 overflow-y-auto" x-text="exp.output"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
             <!-- Action Logs Tab (Admin Only) -->
             @if(auth()->user()->isAdmin())
             <div x-show="currentTab === 'logs'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -440,6 +528,10 @@
                 userForm: { name: '', email: '', password: '', role: 'operator' },
                 queueStats: { pending: 0, processing: 0 },
                 toast: null,
+                experiments: [],
+                experimentForm: { recipe_name: '', prompt_id: null, model_id: null },
+                experimentResult: null,
+                experimentLoading: false,
 
                 async init() {
                     await Promise.all([
@@ -447,6 +539,7 @@
                         this.loadHistory(),
                         this.loadModels(),
                         this.loadPrompts(),
+                        this.loadExperiments(),
                         this.loadQueueStats(),
                         @if(auth()->user()->isAdmin())
                         this.loadLogs(),
@@ -482,6 +575,9 @@
                     if (this.defaults.defaults?.ingredients_prompt) {
                         this.form.ingredients_prompt_id = this.defaults.defaults.ingredients_prompt.id;
                     }
+                    if (this.defaults.defaults?.text_model) {
+                        this.experimentForm.model_id = this.defaults.defaults.text_model.id;
+                    }
                 },
 
                 async loadHistory() {
@@ -498,6 +594,49 @@
                 async loadPrompts() {
                     const res = await fetch('/api/prompts');
                     this.prompts = await res.json();
+                },
+
+                async loadExperiments() {
+                    const res = await fetch('/api/experiments');
+                    const data = await res.json();
+                    this.experiments = data.data || [];
+                },
+
+                async runExperiment() {
+                    this.experimentLoading = true;
+                    this.experimentResult = null;
+                    try {
+                        const res = await fetch('/api/experiments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify(this.experimentForm)
+                        });
+                        if (res.ok) {
+                            this.experimentResult = await res.json();
+                            await this.loadExperiments();
+                            this.showToast('Experiment completed!', 'success');
+                        } else {
+                            const data = await res.json();
+                            this.showToast(data.message || 'Experiment failed', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Experiment failed', 'error');
+                    }
+                    this.experimentLoading = false;
+                },
+
+                async deleteExperiment(id) {
+                    if (!confirm('Delete this experiment?')) return;
+                    await fetch(`/api/experiments/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    });
+                    await this.loadExperiments();
                 },
 
                 async loadLogs() {
