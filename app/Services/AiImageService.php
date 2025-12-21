@@ -55,7 +55,7 @@ class AiImageService implements ImageGeneratorInterface
 
     private function processResponse(array $data): array
     {
-        $images = [];
+        $imageUrls = [];
         $textContent = '';
         $tokensUsed = $data['usage']['total_tokens'] ?? 0;
         $cost = $this->calculateCost($data);
@@ -70,10 +70,7 @@ class AiImageService implements ImageGeneratorInterface
                         if (isset($item['type']) && $item['type'] === 'image_url') {
                             $imageData = $item['image_url']['url'] ?? null;
                             if ($imageData) {
-                                $savedPath = $this->saveImage($imageData);
-                                if ($savedPath) {
-                                    $images[] = $savedPath;
-                                }
+                                $imageUrls[] = $imageData;
                             }
                         }
                     }
@@ -88,10 +85,7 @@ class AiImageService implements ImageGeneratorInterface
                         if (isset($item['type']) && $item['type'] === 'image_url') {
                             $imageData = $item['image_url']['url'] ?? null;
                             if ($imageData) {
-                                $savedPath = $this->saveImage($imageData);
-                                if ($savedPath) {
-                                    $images[] = $savedPath;
-                                }
+                                $imageUrls[] = $imageData;
                             }
                         } elseif (isset($item['type']) && $item['type'] === 'text') {
                             $textContent .= $item['text'] ?? '';
@@ -101,11 +95,21 @@ class AiImageService implements ImageGeneratorInterface
             }
         }
 
+        // Deduplicate source URLs BEFORE saving to avoid duplicate files
+        $uniqueImageUrls = array_unique($imageUrls);
+        $images = [];
+        foreach ($uniqueImageUrls as $imageUrl) {
+            $savedPath = $this->saveImage($imageUrl);
+            if ($savedPath) {
+                $images[] = $savedPath;
+            }
+        }
+
         // Save raw response to JSON log file
         $logPath = $this->saveRawResponseLog($data);
 
         return [
-            'images' => array_values(array_unique($images)),
+            'images' => $images,
             'instructions' => $textContent,
             'tokens_used' => $tokensUsed,
             'cost' => $cost,
