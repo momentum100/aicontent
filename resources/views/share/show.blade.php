@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $generation->title ?? $generation->recipe_name }} - Visual Recipe</title>
+    <title>#{{ $generation->id }} {{ $generation->recipe_name }} - Visual Recipe</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -13,10 +13,13 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="text-sm text-gray-400 font-mono">#{{ $generation->id }}</span>
-                        <h1 class="text-2xl font-bold">{{ $generation->title ?? $generation->recipe_name }}</h1>
-                    </div>
+                    <h1 class="text-2xl font-bold mb-2">
+                        <span class="text-gray-400 font-mono">#{{ $generation->id }}</span>
+                        {{ $generation->recipe_name }}
+                    </h1>
+                    @if($generation->title)
+                    <p class="text-lg text-gray-700 mb-2">{{ $generation->title }}</p>
+                    @endif
                     <p class="text-gray-500 text-sm mb-6">Shared recipe visualization</p>
 
                     @if($generation->images && count($generation->images) > 0)

@@ -8,9 +8,10 @@ use Illuminate\View\View;
 
 class ShareController extends Controller
 {
-    public function show(string $token): View|JsonResponse
+    public function show(int $id, string $token): View|JsonResponse
     {
-        $generation = Generation::where('share_token', $token)
+        $generation = Generation::where('id', $id)
+            ->where('share_token', $token)
             ->where('is_public', true)
             ->with(['model', 'prompt'])
             ->firstOrFail();

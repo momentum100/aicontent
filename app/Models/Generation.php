@@ -105,7 +105,7 @@ class Generation extends Model
             return null;
         }
 
-        return route('share.show', $this->share_token);
+        return route('share.show', ['id' => $this->id, 'token' => $this->share_token]);
     }
 
     public function scopePublic($query)

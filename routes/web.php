@@ -8,7 +8,7 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
-Route::get('/share/{token}', [ShareController::class, 'show'])->name('share.show');
+Route::get('/share/{id}/{token}', [ShareController::class, 'show'])->name('share.show');
 
 Route::get('/dashboard', function () {
     return view('app');
