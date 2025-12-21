@@ -185,6 +185,7 @@
                         <template x-for="gen in history" :key="gen.id">
                             <div class="border rounded px-3 py-2 flex items-center justify-between gap-4">
                                 <div class="flex items-center gap-4 min-w-0 flex-wrap">
+                                    <span class="text-xs text-gray-400 font-mono" x-text="'#' + gen.id"></span>
                                     <span class="font-medium truncate" x-text="gen.recipe_name"></span>
                                     <span class="text-xs text-gray-400 whitespace-nowrap" x-text="new Date(gen.created_at).toLocaleDateString()"></span>
                                     <span class="text-xs text-gray-400 whitespace-nowrap" x-text="'$' + parseFloat(gen.cost || 0).toFixed(4)"></span>

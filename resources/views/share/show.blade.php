@@ -13,7 +13,10 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <h1 class="text-2xl font-bold mb-2">{{ $generation->title ?? $generation->recipe_name }}</h1>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-sm text-gray-400 font-mono">#{{ $generation->id }}</span>
+                        <h1 class="text-2xl font-bold">{{ $generation->title ?? $generation->recipe_name }}</h1>
+                    </div>
                     <p class="text-gray-500 text-sm mb-6">Shared recipe visualization</p>
 
                     @if($generation->images && count($generation->images) > 0)
