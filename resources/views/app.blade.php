@@ -383,15 +383,8 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2" x-text="experimentForm.model_type === 'text' ? 'Text Model' : 'Image Model'"></label>
                                 <select x-model="experimentForm.model_id" required
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <template x-if="experimentForm.model_type === 'text'">
-                                        <template x-for="model in defaults.models?.text" :key="model.id">
-                                            <option :value="model.id" x-text="model.name"></option>
-                                        </template>
-                                    </template>
-                                    <template x-if="experimentForm.model_type === 'image'">
-                                        <template x-for="model in defaults.models?.image" :key="model.id">
-                                            <option :value="model.id" x-text="model.name"></option>
-                                        </template>
+                                    <template x-for="model in (experimentForm.model_type === 'text' ? defaults.models?.text : defaults.models?.image) || []" :key="model.id">
+                                        <option :value="model.id" x-text="model.name"></option>
                                     </template>
                                 </select>
                             </div>
