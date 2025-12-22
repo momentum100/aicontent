@@ -54,6 +54,11 @@ class User extends Authenticatable
         return $this->hasMany(PromptExperiment::class);
     }
 
+    public function scheduledPosts(): HasMany
+    {
+        return $this->hasMany(ScheduledPost::class);
+    }
+
     public function actionLogs(): HasMany
     {
         return $this->hasMany(ActionLog::class);

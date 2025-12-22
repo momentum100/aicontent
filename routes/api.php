@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\DefaultsController;
 use App\Http\Controllers\Api\ExperimentController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\ModelController;
+use App\Http\Controllers\Api\PostizController;
 use App\Http\Controllers\Api\PromptController;
 use App\Http\Controllers\Api\Admin\ActionLogController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -28,6 +29,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('experiments', [ExperimentController::class, 'index']);
     Route::post('experiments', [ExperimentController::class, 'generate']);
     Route::delete('experiments/{experiment}', [ExperimentController::class, 'destroy']);
+
+    Route::prefix('postiz')->group(function () {
+        Route::get('integrations', [PostizController::class, 'integrations']);
+        Route::post('schedule', [PostizController::class, 'schedule']);
+        Route::get('posts', [PostizController::class, 'posts']);
+        Route::delete('posts/{scheduledPost}', [PostizController::class, 'destroy']);
+    });
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {

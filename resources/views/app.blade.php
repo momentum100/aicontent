@@ -41,6 +41,11 @@
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                         Playground
                     </button>
+                    <button @click="currentTab = 'scheduled'; loadScheduledPosts()"
+                        :class="currentTab === 'scheduled' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        Scheduled
+                    </button>
                     @if(auth()->user()->isAdmin())
                     <button @click="currentTab = 'logs'"
                         :class="currentTab === 'logs' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
@@ -130,7 +135,11 @@
                     <div x-show="result" class="mt-8 border-t pt-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-medium">Result</h3>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-3">
+                                <button x-show="result?.status === 'completed'" @click="openScheduleModal(result)"
+                                    class="text-sm px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200">
+                                    Schedule to Postiz
+                                </button>
                                 <span x-show="result?.model" class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded" x-text="'Img: ' + result?.model?.name"></span>
                                 <span x-show="result?.text_model" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" x-text="'Txt: ' + result?.text_model?.name"></span>
                                 <span class="text-sm text-gray-500" x-text="'Cost: $' + parseFloat(result?.cost || 0).toFixed(6)"></span>
@@ -214,6 +223,7 @@
                                     <span x-show="gen.text_model" class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded whitespace-nowrap" x-text="'Txt: ' + gen.text_model?.name"></span>
                                 </div>
                                 <div class="flex gap-1 flex-shrink-0">
+                                    <button x-show="gen.status === 'completed'" @click="openScheduleModal(gen)" class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200">Schedule</button>
                                     <button @click="toggleStatus(gen)" class="text-xs px-2 py-1 rounded"
                                         :class="gen.status === 'failed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'"
                                         x-text="gen.status === 'failed' ? 'Mark OK' : 'Mark Fail'"></button>
@@ -478,6 +488,171 @@
                 </div>
             </div>
 
+            <!-- Scheduled Tab -->
+            <div x-show="currentTab === 'scheduled'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium mb-4">Scheduled Posts</h3>
+
+                    <div x-show="scheduledPosts.length === 0" class="text-gray-500 text-center py-8">
+                        No scheduled posts yet. Use the "Schedule" button on completed generations to schedule posts.
+                    </div>
+
+                    <div class="space-y-3">
+                        <template x-for="post in scheduledPosts" :key="post.id">
+                            <div class="border rounded-lg p-4">
+                                <div class="flex justify-between items-start gap-4">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap mb-2">
+                                            <span class="text-xs font-mono text-gray-400" x-text="'#' + post.id"></span>
+                                            <span class="text-xs px-2 py-0.5 rounded font-medium"
+                                                :class="{
+                                                    'bg-blue-100 text-blue-700': post.status === 'scheduled',
+                                                    'bg-green-100 text-green-700': post.status === 'published',
+                                                    'bg-red-100 text-red-700': post.status === 'failed',
+                                                    'bg-yellow-100 text-yellow-700': post.status === 'pending'
+                                                }"
+                                                x-text="post.status"></span>
+                                            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded" x-text="post.channel"></span>
+                                            <span class="text-xs text-gray-500" x-text="new Date(post.scheduled_at).toLocaleString()"></span>
+                                        </div>
+                                        <p class="font-medium truncate" x-text="post.generation?.recipe_name || post.content?.split('\\n')[0]"></p>
+                                        <!-- Preview images -->
+                                        <div x-show="post.images?.length" class="flex gap-1 mt-2">
+                                            <template x-for="(img, idx) in (post.images || []).slice(0, 4)" :key="idx">
+                                                <img :src="'/storage/' + img" class="w-12 h-12 object-cover rounded">
+                                            </template>
+                                            <span x-show="(post.images?.length || 0) > 4" class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500" x-text="'+' + ((post.images?.length || 0) - 4)"></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 flex-shrink-0">
+                                        <button @click="cancelScheduledPost(post.id)"
+                                            x-show="post.status === 'scheduled' || post.status === 'pending'"
+                                            class="text-xs px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Modal -->
+            <div x-show="showScheduleModal" x-cloak
+                class="fixed inset-0 z-50 overflow-y-auto"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0">
+                <div class="flex min-h-screen items-center justify-center p-4">
+                    <!-- Backdrop -->
+                    <div class="fixed inset-0 bg-black/50" @click="showScheduleModal = false"></div>
+
+                    <!-- Modal Content -->
+                    <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6" @click.stop>
+                        <h3 class="text-lg font-medium mb-4">Schedule Post to Postiz</h3>
+
+                        <!-- Preview -->
+                        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <p class="font-medium mb-2" x-text="scheduleForm.generation?.title || scheduleForm.generation?.recipe_name"></p>
+                            <div x-show="scheduleForm.generation?.images?.length" class="flex gap-1 mb-2">
+                                <template x-for="(img, idx) in (scheduleForm.generation?.images || []).slice(0, 5)" :key="idx">
+                                    <img :src="'/storage/' + img" class="w-14 h-14 object-cover rounded">
+                                </template>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-3" x-text="scheduleForm.generation?.ingredients"></p>
+                        </div>
+
+                        <!-- Channel Selection -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Channel</label>
+                            <div x-show="postizIntegrations.length === 0" class="text-sm text-gray-500 p-3 bg-yellow-50 rounded">
+                                No integrations found. Connect accounts in Postiz first.
+                            </div>
+                            <div x-show="postizIntegrations.length > 0" class="space-y-2">
+                                <template x-for="integration in postizIntegrations" :key="integration.id">
+                                    <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                                        :class="scheduleForm.integration_id === integration.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'">
+                                        <input type="radio" name="integration" :value="integration.id"
+                                            x-model="scheduleForm.integration_id"
+                                            @change="scheduleForm.channel = integration.identifier"
+                                            class="text-indigo-600 focus:ring-indigo-500">
+                                        <img :src="integration.picture" class="w-10 h-10 rounded-full object-cover" :alt="integration.name">
+                                        <div class="flex-1">
+                                            <div class="font-medium" x-text="integration.name"></div>
+                                            <div class="text-xs text-gray-500 capitalize" x-text="integration.identifier"></div>
+                                        </div>
+                                        <span class="text-xs px-2 py-1 rounded capitalize"
+                                            :class="{
+                                                'bg-black text-white': integration.identifier === 'tiktok',
+                                                'bg-gradient-to-r from-purple-500 to-pink-500 text-white': integration.identifier === 'instagram',
+                                                'bg-blue-500 text-white': integration.identifier === 'facebook',
+                                                'bg-black text-white': integration.identifier === 'x',
+                                                'bg-blue-700 text-white': integration.identifier === 'linkedin',
+                                                'bg-gray-500 text-white': !['tiktok', 'instagram', 'facebook', 'x', 'linkedin'].includes(integration.identifier)
+                                            }"
+                                            x-text="integration.identifier"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Quick Date Selection -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">When to post</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" @click="scheduleForm.schedule_type = 'now'"
+                                    :class="scheduleForm.schedule_type === 'now' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                                    class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors">
+                                    Now
+                                </button>
+                                <button type="button" @click="scheduleForm.schedule_type = 0"
+                                    :class="scheduleForm.schedule_type === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                                    class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors">
+                                    Today
+                                </button>
+                                <button type="button" @click="scheduleForm.schedule_type = 1"
+                                    :class="scheduleForm.schedule_type === 1 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                                    class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors">
+                                    Tomorrow
+                                </button>
+                                <template x-for="day in [2, 3, 4, 5, 6, 7]" :key="day">
+                                    <button type="button" @click="scheduleForm.schedule_type = day"
+                                        :class="scheduleForm.schedule_type === day ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                                        class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors"
+                                        x-text="'+' + day + ' days'">
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Time Selection (only for scheduled posts) -->
+                        <div x-show="scheduleForm.schedule_type !== 'now'" class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                            <input type="time" x-model="scheduleForm.schedule_time"
+                                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-end gap-3">
+                            <button type="button" @click="showScheduleModal = false"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                                Cancel
+                            </button>
+                            <button type="button" @click="submitSchedule()"
+                                :disabled="scheduleLoading || !scheduleForm.integration_id"
+                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span x-show="!scheduleLoading" x-text="scheduleForm.schedule_type === 'now' ? 'Post Now' : 'Schedule'"></span>
+                                <span x-show="scheduleLoading">Scheduling...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Action Logs Tab (Admin Only) -->
             @if(auth()->user()->isAdmin())
             <div x-show="currentTab === 'logs'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -592,6 +767,19 @@
                 experimentForm: { recipe_name: '', prompt_id: null, model_id: null, prompt_content: '', model_type: 'text' },
                 experimentResult: null,
                 experimentLoading: false,
+                // Postiz scheduling
+                scheduledPosts: [],
+                postizIntegrations: [],
+                showScheduleModal: false,
+                scheduleLoading: false,
+                scheduleForm: {
+                    generation_id: null,
+                    generation: null,
+                    integration_id: '',
+                    channel: '',
+                    schedule_type: 'now', // 'now' or days offset (0-7)
+                    schedule_time: '12:00'
+                },
 
                 async init() {
                     await Promise.all([
@@ -997,6 +1185,110 @@
                         await navigator.clipboard.writeText(text);
                     } catch (e) {
                         console.error('Copy failed', e);
+                    }
+                },
+
+                // Postiz scheduling functions
+                async loadPostizIntegrations() {
+                    try {
+                        const res = await fetch('/api/postiz/integrations');
+                        if (res.ok) {
+                            this.postizIntegrations = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Failed to load Postiz integrations', e);
+                    }
+                },
+
+                async loadScheduledPosts() {
+                    try {
+                        const res = await fetch('/api/postiz/posts');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.scheduledPosts = data.data || [];
+                        }
+                    } catch (e) {
+                        console.error('Failed to load scheduled posts', e);
+                    }
+                },
+
+                async openScheduleModal(gen) {
+                    // Load integrations if not loaded
+                    if (this.postizIntegrations.length === 0) {
+                        await this.loadPostizIntegrations();
+                    }
+
+                    this.scheduleForm = {
+                        generation_id: gen.id,
+                        generation: gen,
+                        integration_id: '',
+                        channel: '',
+                        schedule_type: 'now',
+                        schedule_time: '12:00'
+                    };
+                    this.showScheduleModal = true;
+                },
+
+
+                async submitSchedule() {
+                    this.scheduleLoading = true;
+                    try {
+                        // Calculate scheduled_at
+                        let scheduledAt = null;
+                        if (this.scheduleForm.schedule_type !== 'now') {
+                            const date = new Date();
+                            date.setDate(date.getDate() + this.scheduleForm.schedule_type);
+                            const [hours, minutes] = this.scheduleForm.schedule_time.split(':');
+                            date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                            scheduledAt = date.toISOString();
+                        }
+
+                        const res = await fetch('/api/postiz/schedule', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                generation_id: this.scheduleForm.generation_id,
+                                integration_id: this.scheduleForm.integration_id,
+                                channel: this.scheduleForm.channel,
+                                scheduled_at: scheduledAt
+                            })
+                        });
+
+                        if (res.ok) {
+                            this.showScheduleModal = false;
+                            this.showToast(this.scheduleForm.schedule_type === 'now' ? 'Posted successfully!' : 'Post scheduled!', 'success');
+                            await this.loadScheduledPosts();
+                        } else {
+                            const data = await res.json();
+                            this.showToast(data.message || 'Failed to schedule post', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to schedule post', 'error');
+                    }
+                    this.scheduleLoading = false;
+                },
+
+                async cancelScheduledPost(id) {
+                    if (!confirm('Cancel this scheduled post?')) return;
+                    try {
+                        const res = await fetch(`/api/postiz/posts/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        if (res.ok) {
+                            this.showToast('Scheduled post cancelled', 'success');
+                            await this.loadScheduledPosts();
+                        } else {
+                            const data = await res.json();
+                            this.showToast(data.message || 'Failed to cancel post', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to cancel post', 'error');
                     }
                 }
             }

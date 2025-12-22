@@ -40,4 +40,9 @@ return [
         'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
     ],
 
+    'postiz' => [
+        'api_key' => env('POSTIZ_API_KEY'),
+        'base_url' => env('POSTIZ_BASE_URL', 'https://api.postiz.com/public/v1'),
+    ],
+
 ];
