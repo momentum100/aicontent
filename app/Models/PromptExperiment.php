@@ -18,6 +18,7 @@ class PromptExperiment extends Model
         'recipe_name',
         'prompt_content',
         'output',
+        'images',
         'tokens_used',
         'cost',
         'raw_response',
@@ -27,6 +28,7 @@ class PromptExperiment extends Model
     {
         return [
             'raw_response' => 'array',
+            'images' => 'array',
             'cost' => 'decimal:6',
         ];
     }

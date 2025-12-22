@@ -23,7 +23,12 @@ class AiImageService implements ImageGeneratorInterface
 
     public function generate(string $recipeName, AiModel $model, Prompt $prompt): array
     {
-        $promptContent = str_replace('{{recipe_name}}', $recipeName, $prompt->content);
+        return $this->generateWithContent($recipeName, $model, $prompt->content);
+    }
+
+    public function generateWithContent(string $recipeName, AiModel $model, string $promptContent): array
+    {
+        $promptContent = str_replace('{{recipe_name}}', $recipeName, $promptContent);
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,

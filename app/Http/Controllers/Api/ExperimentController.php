@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AiModel;
 use App\Models\Prompt;
 use App\Models\PromptExperiment;
+use App\Services\AiImageService;
 use App\Services\AiTextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,8 @@ use Illuminate\Http\Request;
 class ExperimentController extends Controller
 {
     public function __construct(
-        private AiTextService $textService
+        private AiTextService $textService,
+        private AiImageService $imageService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -39,23 +41,43 @@ class ExperimentController extends Controller
         $model = AiModel::findOrFail($validated['model_id']);
 
         try {
-            $result = $this->textService->generateWithContent(
-                $validated['recipe_name'],
-                $model,
-                $validated['prompt_content']
-            );
+            if ($model->type === 'image') {
+                $result = $this->imageService->generateWithContent(
+                    $validated['recipe_name'],
+                    $model,
+                    $validated['prompt_content']
+                );
 
-            $experiment = PromptExperiment::create([
-                'user_id' => $request->user()->id,
-                'prompt_id' => $validated['prompt_id'] ?? null,
-                'model_id' => $model->id,
-                'recipe_name' => $validated['recipe_name'],
-                'prompt_content' => $validated['prompt_content'],
-                'output' => $result['text'],
-                'tokens_used' => $result['tokens_used'],
-                'cost' => $result['cost'],
-                'raw_response' => $result['raw_response'],
-            ]);
+                $experiment = PromptExperiment::create([
+                    'user_id' => $request->user()->id,
+                    'prompt_id' => $validated['prompt_id'] ?? null,
+                    'model_id' => $model->id,
+                    'recipe_name' => $validated['recipe_name'],
+                    'prompt_content' => $validated['prompt_content'],
+                    'output' => $result['instructions'] ?? null,
+                    'images' => $result['images'],
+                    'tokens_used' => $result['tokens_used'],
+                    'cost' => $result['cost'],
+                ]);
+            } else {
+                $result = $this->textService->generateWithContent(
+                    $validated['recipe_name'],
+                    $model,
+                    $validated['prompt_content']
+                );
+
+                $experiment = PromptExperiment::create([
+                    'user_id' => $request->user()->id,
+                    'prompt_id' => $validated['prompt_id'] ?? null,
+                    'model_id' => $model->id,
+                    'recipe_name' => $validated['recipe_name'],
+                    'prompt_content' => $validated['prompt_content'],
+                    'output' => $result['text'],
+                    'tokens_used' => $result['tokens_used'],
+                    'cost' => $result['cost'],
+                    'raw_response' => $result['raw_response'],
+                ]);
+            }
 
             $experiment->load(['prompt', 'model']);
 

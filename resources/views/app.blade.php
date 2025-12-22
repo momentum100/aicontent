@@ -361,7 +361,7 @@
 
                     <!-- Experiment Form -->
                     <form @submit.prevent="runExperiment()" class="mb-6 p-4 border rounded-lg bg-gray-50">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Recipe Name</label>
                                 <input type="text" x-model="experimentForm.recipe_name" required
@@ -369,11 +369,29 @@
                                     placeholder="Enter recipe name...">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Text Model</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Model Type</label>
+                                <div class="flex rounded-md shadow-sm">
+                                    <button type="button" @click="experimentForm.model_type = 'text'; experimentForm.model_id = defaults.models?.text?.[0]?.id"
+                                        :class="experimentForm.model_type === 'text' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
+                                        class="flex-1 py-2 px-3 text-sm font-medium rounded-l-md border border-gray-300">Text</button>
+                                    <button type="button" @click="experimentForm.model_type = 'image'; experimentForm.model_id = defaults.models?.image?.[0]?.id"
+                                        :class="experimentForm.model_type === 'image' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
+                                        class="flex-1 py-2 px-3 text-sm font-medium rounded-r-md border border-gray-300 border-l-0">Image</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="experimentForm.model_type === 'text' ? 'Text Model' : 'Image Model'"></label>
                                 <select x-model="experimentForm.model_id" required
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <template x-for="model in defaults.models?.text" :key="model.id">
-                                        <option :value="model.id" x-text="model.name"></option>
+                                    <template x-if="experimentForm.model_type === 'text'">
+                                        <template x-for="model in defaults.models?.text" :key="model.id">
+                                            <option :value="model.id" x-text="model.name"></option>
+                                        </template>
+                                    </template>
+                                    <template x-if="experimentForm.model_type === 'image'">
+                                        <template x-for="model in defaults.models?.image" :key="model.id">
+                                            <option :value="model.id" x-text="model.name"></option>
+                                        </template>
                                     </template>
                                 </select>
                             </div>
@@ -410,15 +428,25 @@
                             <h4 class="font-medium">Latest Result</h4>
                             <div class="flex items-center gap-2">
                                 <span x-show="experimentResult?.model" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded" x-text="experimentResult?.model?.name"></span>
+                                <span x-show="experimentResult?.images?.length" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded" x-text="experimentResult?.images?.length + ' images'"></span>
                                 <span class="text-xs text-gray-500" x-text="'$' + parseFloat(experimentResult?.cost || 0).toFixed(6)"></span>
-                                <button @click="copyToClipboard(experimentResult?.output)" class="text-gray-400 hover:text-gray-600">
+                                <button x-show="experimentResult?.output" @click="copyToClipboard(experimentResult?.output)" class="text-gray-400 hover:text-gray-600">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                                     </svg>
                                 </button>
                             </div>
                         </div>
-                        <div class="bg-gray-50 p-3 rounded whitespace-pre-wrap text-sm" x-text="experimentResult?.output"></div>
+                        <!-- Images Grid -->
+                        <div x-show="experimentResult?.images?.length" class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                            <template x-for="(img, idx) in experimentResult?.images || []" :key="idx">
+                                <a :href="'/storage/' + img" target="_blank">
+                                    <img :src="'/storage/' + img" class="w-full h-32 object-cover rounded cursor-pointer hover:opacity-90">
+                                </a>
+                            </template>
+                        </div>
+                        <!-- Text Output -->
+                        <div x-show="experimentResult?.output" class="bg-gray-50 p-3 rounded whitespace-pre-wrap text-sm" x-text="experimentResult?.output"></div>
                     </div>
 
                     <!-- Experiment History -->
@@ -430,17 +458,27 @@
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="text-xs text-gray-400 font-mono" x-text="'#' + exp.id"></span>
                                         <span class="font-medium" x-text="exp.recipe_name"></span>
-                                        <span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded" x-text="exp.prompt?.name"></span>
+                                        <span x-show="exp.prompt?.name" class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded" x-text="exp.prompt?.name"></span>
                                         <span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded" x-text="exp.model?.name"></span>
+                                        <span x-show="exp.images?.length" class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded" x-text="exp.images?.length + ' imgs'"></span>
                                         <span class="text-xs text-gray-400" x-text="'$' + parseFloat(exp.cost || 0).toFixed(6)"></span>
                                         <span class="text-xs text-gray-400" x-text="new Date(exp.created_at).toLocaleString()"></span>
                                     </div>
                                     <div class="flex gap-1">
-                                        <button @click="copyToClipboard(exp.output)" class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">Copy</button>
+                                        <button x-show="exp.output" @click="copyToClipboard(exp.output)" class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">Copy</button>
                                         <button @click="deleteExperiment(exp.id)" class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">Del</button>
                                     </div>
                                 </div>
-                                <div class="bg-gray-50 p-2 rounded text-sm whitespace-pre-wrap max-h-32 overflow-y-auto" x-text="exp.output"></div>
+                                <!-- Images -->
+                                <div x-show="exp.images?.length" class="grid grid-cols-4 md:grid-cols-6 gap-1 mb-2">
+                                    <template x-for="(img, idx) in exp.images || []" :key="idx">
+                                        <a :href="'/storage/' + img" target="_blank">
+                                            <img :src="'/storage/' + img" class="w-full h-16 object-cover rounded">
+                                        </a>
+                                    </template>
+                                </div>
+                                <!-- Text Output -->
+                                <div x-show="exp.output" class="bg-gray-50 p-2 rounded text-sm whitespace-pre-wrap max-h-32 overflow-y-auto" x-text="exp.output"></div>
                             </div>
                         </template>
                     </div>
@@ -558,7 +596,7 @@
                 queueStats: { pending: 0, processing: 0 },
                 toast: null,
                 experiments: [],
-                experimentForm: { recipe_name: '', prompt_id: null, model_id: null, prompt_content: '' },
+                experimentForm: { recipe_name: '', prompt_id: null, model_id: null, prompt_content: '', model_type: 'text' },
                 experimentResult: null,
                 experimentLoading: false,
 
