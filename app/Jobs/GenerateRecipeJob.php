@@ -45,6 +45,11 @@ class GenerateRecipeJob implements ShouldQueue
             $totalCost = $imageResult['cost'];
             $totalTokens = $imageResult['tokens_used'];
 
+            // Validate image count - fail if less than 4 images
+            $imageCount = count($imageResult['images'] ?? []);
+            $minImages = 4;
+            $isFailed = $imageCount < $minImages;
+
             $title = null;
             $ingredients = null;
             $textModelId = null;
@@ -93,8 +98,16 @@ class GenerateRecipeJob implements ShouldQueue
                 'tokens_used' => $totalTokens,
                 'cost' => $totalCost,
                 'text_model_id' => $textModelId,
-                'status' => 'completed',
+                'status' => $isFailed ? 'failed' : 'completed',
             ]);
+
+            if ($isFailed) {
+                \Log::warning('Generation marked as failed: insufficient images', [
+                    'generation_id' => $this->generationId,
+                    'image_count' => $imageCount,
+                    'min_required' => $minImages,
+                ]);
+            }
 
         } catch (\Throwable $e) {
             DB::reconnect();
