@@ -53,8 +53,9 @@ class PostizService
 
     /**
      * Upload an image to Postiz
+     * Returns array with id and path, or null if failed
      */
-    public function uploadImage(string $imagePath): ?string
+    public function uploadImage(string $imagePath): ?array
     {
         $fullPath = Storage::disk('public')->path($imagePath);
 
@@ -75,7 +76,11 @@ class PostizService
         }
 
         $data = $response->json();
-        return $data['url'] ?? $data['path'] ?? null;
+        // Return both id and path as required by Postiz API
+        return [
+            'id' => $data['id'] ?? null,
+            'path' => $data['path'] ?? null,
+        ];
     }
 
     /**
@@ -87,12 +92,12 @@ class PostizService
         string $channel,
         ?Carbon $scheduledAt = null
     ): array {
-        // Upload images first
+        // Upload images first - Postiz requires id and path for each image
         $uploadedImages = [];
         foreach ($generation->images ?? [] as $imagePath) {
-            $uploadedUrl = $this->uploadImage($imagePath);
-            if ($uploadedUrl) {
-                $uploadedImages[] = ['url' => $uploadedUrl];
+            $uploadedImage = $this->uploadImage($imagePath);
+            if ($uploadedImage && $uploadedImage['id'] && $uploadedImage['path']) {
+                $uploadedImages[] = $uploadedImage;
             }
         }
 
@@ -102,9 +107,29 @@ class PostizService
             $content .= "\n\n" . $generation->ingredients;
         }
 
+        // Date is always required - use now + 1 minute if posting immediately
+        $postDate = $scheduledAt ?? Carbon::now()->addMinute();
+
+        // Build channel-specific settings
+        $settings = ['__type' => $channel];
+
+        if ($channel === 'tiktok') {
+            $settings = array_merge($settings, [
+                'privacy_level' => 'PUBLIC_TO_EVERYONE',
+                'duet' => false,
+                'stitch' => false,
+                'comment' => true,
+                'autoAddMusic' => 'no',
+                'brand_content_toggle' => false,
+                'brand_organic_toggle' => false,
+                'content_posting_method' => 'UPLOAD',
+            ]);
+        }
+
         // Build post payload
         $postData = [
             'type' => $scheduledAt ? 'schedule' : 'now',
+            'date' => $postDate->toIso8601String(),
             'shortLink' => false,
             'tags' => [],
             'posts' => [
@@ -118,16 +143,10 @@ class PostizService
                             'image' => $uploadedImages,
                         ],
                     ],
-                    'settings' => [
-                        '__type' => $channel,
-                    ],
+                    'settings' => $settings,
                 ],
             ],
         ];
-
-        if ($scheduledAt) {
-            $postData['date'] = $scheduledAt->toIso8601String();
-        }
 
         $response = Http::withHeaders([
             'Authorization' => $this->apiKey,
