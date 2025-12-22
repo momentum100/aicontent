@@ -100,13 +100,14 @@ class AiImageService implements ImageGeneratorInterface
             }
         }
 
-        // Deduplicate source URLs BEFORE saving to avoid duplicate files
-        $uniqueImageUrls = array_unique($imageUrls);
+        // Deduplicate by content hash to avoid saving identical images
         $images = [];
-        foreach ($uniqueImageUrls as $imageUrl) {
-            $savedPath = $this->saveImage($imageUrl);
-            if ($savedPath) {
-                $images[] = $savedPath;
+        $seenHashes = [];
+        foreach ($imageUrls as $imageUrl) {
+            $result = $this->saveImageIfUnique($imageUrl, $seenHashes);
+            if ($result) {
+                $images[] = $result['path'];
+                $seenHashes[] = $result['hash'];
             }
         }
 
@@ -132,7 +133,7 @@ class AiImageService implements ImageGeneratorInterface
         return $path;
     }
 
-    private function saveImage(string $imageData): ?string
+    private function saveImageIfUnique(string $imageData, array $seenHashes): ?array
     {
         if (str_starts_with($imageData, 'data:image')) {
             $parts = explode(',', $imageData, 2);
@@ -149,12 +150,18 @@ class AiImageService implements ImageGeneratorInterface
             return null;
         }
 
+        // Check content hash to avoid duplicates
+        $hash = md5($imageData);
+        if (in_array($hash, $seenHashes)) {
+            return null;
+        }
+
         $filename = Str::uuid() . '.png';
         $path = 'generations/' . date('Y/m/d') . '/' . $filename;
 
         Storage::disk('public')->put($path, $imageData);
 
-        return $path;
+        return ['path' => $path, 'hash' => $hash];
     }
 
     private function calculateCost(array $data): float
