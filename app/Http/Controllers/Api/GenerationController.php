@@ -146,6 +146,25 @@ class GenerationController extends Controller
         ]);
     }
 
+    public function updateStatus(Request $request, Generation $generation): JsonResponse
+    {
+        if ($generation->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:completed,failed',
+        ]);
+
+        $generation->status = $validated['status'];
+        $generation->save();
+
+        return response()->json([
+            'id' => $generation->id,
+            'status' => $generation->status,
+        ]);
+    }
+
     public function destroy(Request $request, Generation $generation): JsonResponse
     {
         if ($generation->user_id !== $request->user()->id) {

@@ -15,6 +15,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('generations/{generation}/status', [GenerationController::class, 'status']);
     Route::post('generations/{generation}/share', [GenerationController::class, 'toggleShare']);
     Route::delete('generations/{generation}/image', [GenerationController::class, 'deleteImage']);
+    Route::post('generations/{generation}/status', [GenerationController::class, 'updateStatus']);
     Route::get('queue/stats', [GenerationController::class, 'queueStats']);
 
     Route::apiResource('models', ModelController::class);

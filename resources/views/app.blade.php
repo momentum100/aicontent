@@ -194,9 +194,19 @@
                     <h3 class="text-lg font-medium mb-4">Generation History</h3>
                     <div class="space-y-2">
                         <template x-for="gen in history" :key="gen.id">
-                            <div class="border rounded px-3 py-2 flex items-center justify-between gap-4">
+                            <div class="border rounded px-3 py-2 flex items-center justify-between gap-4"
+                                :class="gen.status === 'failed' ? 'bg-red-50 border-red-200' : (gen.status === 'processing' ? 'bg-yellow-50 border-yellow-200' : '')">
                                 <div class="flex items-center gap-4 min-w-0 flex-wrap">
                                     <span class="text-xs text-gray-400 font-mono" x-text="'#' + gen.id"></span>
+                                    <span class="text-xs px-1.5 py-0.5 rounded font-medium"
+                                        :class="{
+                                            'bg-green-100 text-green-700': gen.status === 'completed',
+                                            'bg-yellow-100 text-yellow-700': gen.status === 'processing',
+                                            'bg-red-100 text-red-700': gen.status === 'failed'
+                                        }"
+                                        x-text="gen.status"></span>
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded"
+                                        x-text="(gen.images?.length || 0) + ' imgs'"></span>
                                     <span class="font-medium truncate" x-text="gen.recipe_name"></span>
                                     <span class="text-xs text-gray-400 whitespace-nowrap" x-text="new Date(gen.created_at).toLocaleDateString()"></span>
                                     <span class="text-xs text-gray-400 whitespace-nowrap" x-text="'$' + parseFloat(gen.cost || 0).toFixed(4)"></span>
@@ -204,6 +214,9 @@
                                     <span x-show="gen.text_model" class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded whitespace-nowrap" x-text="'Txt: ' + gen.text_model?.name"></span>
                                 </div>
                                 <div class="flex gap-1 flex-shrink-0">
+                                    <button @click="toggleStatus(gen)" class="text-xs px-2 py-1 rounded"
+                                        :class="gen.status === 'failed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'"
+                                        x-text="gen.status === 'failed' ? 'Mark OK' : 'Mark Fail'"></button>
                                     <button @click="toggleShare(gen)" class="text-xs px-2 py-1 rounded"
                                         :class="gen.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                                         x-text="gen.is_public ? 'Shared' : 'Share'"></button>
@@ -800,6 +813,23 @@
                     if (data.share_url) {
                         await this.copyToClipboard(data.share_url);
                         this.showToast('Share URL copied to clipboard!', 'success');
+                    }
+                },
+
+                async toggleStatus(gen) {
+                    const newStatus = gen.status === 'failed' ? 'completed' : 'failed';
+                    const res = await fetch(`/api/generations/${gen.id}/status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        gen.status = data.status;
+                        this.showToast(`Marked as ${data.status}`, 'success');
                     }
                 },
 
