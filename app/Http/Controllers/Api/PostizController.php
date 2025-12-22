@@ -32,7 +32,7 @@ class PostizController extends Controller
     }
 
     /**
-     * Schedule a post
+     * Schedule a post - saves locally, processed by queue command every 30 min
      */
     public function schedule(Request $request): JsonResponse
     {
@@ -51,45 +51,30 @@ class PostizController extends Controller
 
         $scheduledAt = $validated['scheduled_at']
             ? Carbon::parse($validated['scheduled_at'])
-            : null;
+            : now();
 
-        try {
-            $result = $this->postizService->schedulePost(
-                $generation,
-                $validated['integration_id'],
-                $validated['channel'],
-                $scheduledAt
-            );
-
-            // Get the post ID from result
-            $postizPostId = $result[0]['postId'] ?? null;
-
-            // Build content for local record
-            $content = $generation->title ?? $generation->recipe_name;
-            if ($generation->ingredients) {
-                $content .= "\n\n" . $generation->ingredients;
-            }
-
-            $scheduledPost = ScheduledPost::create([
-                'user_id' => $request->user()->id,
-                'generation_id' => $generation->id,
-                'postiz_post_id' => $postizPostId,
-                'channel' => $validated['channel'],
-                'integration_id' => $validated['integration_id'],
-                'scheduled_at' => $scheduledAt ?? now(),
-                'status' => 'scheduled',
-                'content' => $content,
-                'images' => $generation->images,
-            ]);
-
-            $scheduledPost->load('generation');
-
-            return response()->json($scheduledPost);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to schedule post: ' . $e->getMessage()
-            ], 500);
+        // Build content for local record
+        $content = $generation->title ?? $generation->recipe_name;
+        if ($generation->ingredients) {
+            $content .= "\n\n" . $generation->ingredients;
         }
+
+        // Save locally as pending - will be processed by ProcessPostizQueue command
+        $scheduledPost = ScheduledPost::create([
+            'user_id' => $request->user()->id,
+            'generation_id' => $generation->id,
+            'postiz_post_id' => null,
+            'channel' => $validated['channel'],
+            'integration_id' => $validated['integration_id'],
+            'scheduled_at' => $scheduledAt,
+            'status' => 'pending',
+            'content' => $content,
+            'images' => $generation->images,
+        ]);
+
+        $scheduledPost->load('generation');
+
+        return response()->json($scheduledPost);
     }
 
     /**

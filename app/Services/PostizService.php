@@ -95,7 +95,7 @@ class PostizService
         string $integrationId,
         string $channel,
         ?Carbon $scheduledAt = null,
-        int $maxImages = 4
+        int $maxImages = 10
     ): array {
         // Upload images first - Postiz requires id and path for each image
         // Limit images to save API requests (30/hour limit)

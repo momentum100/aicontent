@@ -23,3 +23,9 @@ Schedule::command('queue:prune-failed --hours=168')
 Schedule::command('queue:prune-batches --hours=168')
     ->dailyAt('02:30')
     ->onOneServer();
+
+// Process Postiz queue every 30 minutes
+Schedule::command('postiz:process')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
