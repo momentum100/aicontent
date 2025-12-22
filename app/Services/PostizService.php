@@ -94,15 +94,12 @@ class PostizService
         Generation $generation,
         string $integrationId,
         string $channel,
-        ?Carbon $scheduledAt = null,
-        int $maxImages = 10
+        ?Carbon $scheduledAt = null
     ): array {
         // Upload images first - Postiz requires id and path for each image
-        // Limit images to save API requests (30/hour limit)
         $uploadedImages = [];
-        $imagesToUpload = array_slice($generation->images ?? [], 0, $maxImages);
 
-        foreach ($imagesToUpload as $imagePath) {
+        foreach ($generation->images ?? [] as $imagePath) {
             $uploadedImage = $this->uploadImage($imagePath);
             if ($uploadedImage && $uploadedImage['id'] && $uploadedImage['path']) {
                 $uploadedImages[] = $uploadedImage;

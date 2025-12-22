@@ -92,6 +92,28 @@ class PostizController extends Controller
     }
 
     /**
+     * Retry a failed scheduled post
+     */
+    public function retry(Request $request, ScheduledPost $scheduledPost): JsonResponse
+    {
+        if ($scheduledPost->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($scheduledPost->status !== 'failed') {
+            return response()->json(['message' => 'Only failed posts can be retried'], 400);
+        }
+
+        $scheduledPost->update([
+            'status' => 'pending',
+            'error_message' => null,
+            'scheduled_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'Post queued for retry']);
+    }
+
+    /**
      * Cancel/delete a scheduled post
      */
     public function destroy(Request $request, ScheduledPost $scheduledPost): JsonResponse

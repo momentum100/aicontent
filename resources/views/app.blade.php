@@ -491,15 +491,26 @@
             <!-- Scheduled Tab -->
             <div x-show="currentTab === 'scheduled'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <h3 class="text-lg font-medium mb-4">Scheduled Posts</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">Scheduled Posts</h3>
+                        <div class="flex gap-2 text-xs">
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded" x-text="scheduledPosts.filter(p => p.status === 'pending').length + ' in queue'"></span>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded" x-text="scheduledPosts.filter(p => p.status === 'scheduled').length + ' scheduled'"></span>
+                        </div>
+                    </div>
 
                     <div x-show="scheduledPosts.length === 0" class="text-gray-500 text-center py-8">
                         No scheduled posts yet. Use the "Schedule" button on completed generations to schedule posts.
                     </div>
 
+                    <!-- Queue info banner -->
+                    <div x-show="scheduledPosts.filter(p => p.status === 'pending').length > 0" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                        <strong>Queue info:</strong> Pending posts are processed every 30 minutes to avoid API rate limits.
+                    </div>
+
                     <div class="space-y-3">
                         <template x-for="post in scheduledPosts" :key="post.id">
-                            <div class="border rounded-lg p-4">
+                            <div class="border rounded-lg p-4" :class="post.status === 'failed' ? 'border-red-300 bg-red-50' : ''">
                                 <div class="flex justify-between items-start gap-4">
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2 flex-wrap mb-2">
@@ -511,11 +522,14 @@
                                                     'bg-red-100 text-red-700': post.status === 'failed',
                                                     'bg-yellow-100 text-yellow-700': post.status === 'pending'
                                                 }"
-                                                x-text="post.status"></span>
+                                                x-text="post.status === 'pending' ? 'in queue' : post.status"></span>
                                             <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded" x-text="post.channel"></span>
-                                            <span class="text-xs text-gray-500" x-text="new Date(post.scheduled_at).toLocaleString()"></span>
+                                            <span class="text-xs text-gray-500" x-text="'Post: ' + new Date(post.scheduled_at).toLocaleString()"></span>
+                                            <span x-show="post.postiz_post_id" class="text-xs text-gray-400" x-text="'Postiz: ' + post.postiz_post_id"></span>
                                         </div>
                                         <p class="font-medium truncate" x-text="post.generation?.recipe_name || post.content?.split('\\n')[0]"></p>
+                                        <!-- Error message for failed posts -->
+                                        <p x-show="post.status === 'failed' && post.error_message" class="text-xs text-red-600 mt-1 truncate" x-text="post.error_message"></p>
                                         <!-- Preview images -->
                                         <div x-show="post.images?.length" class="flex gap-1 mt-2">
                                             <template x-for="(img, idx) in (post.images || []).slice(0, 4)" :key="idx">
@@ -525,10 +539,20 @@
                                         </div>
                                     </div>
                                     <div class="flex gap-2 flex-shrink-0">
+                                        <button @click="retryScheduledPost(post.id)"
+                                            x-show="post.status === 'failed'"
+                                            class="text-xs px-3 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200">
+                                            Retry
+                                        </button>
                                         <button @click="cancelScheduledPost(post.id)"
                                             x-show="post.status === 'scheduled' || post.status === 'pending'"
                                             class="text-xs px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">
                                             Cancel
+                                        </button>
+                                        <button @click="cancelScheduledPost(post.id)"
+                                            x-show="post.status === 'failed'"
+                                            class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                                            Delete
                                         </button>
                                     </div>
                                 </div>
@@ -1269,6 +1293,26 @@
                         this.showToast('Failed to schedule post', 'error');
                     }
                     this.scheduleLoading = false;
+                },
+
+                async retryScheduledPost(id) {
+                    try {
+                        const res = await fetch(`/api/postiz/posts/${id}/retry`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        });
+                        if (res.ok) {
+                            this.showToast('Post queued for retry', 'success');
+                            await this.loadScheduledPosts();
+                        } else {
+                            const data = await res.json();
+                            this.showToast(data.message || 'Failed to retry post', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to retry post', 'error');
+                    }
                 },
 
                 async cancelScheduledPost(id) {

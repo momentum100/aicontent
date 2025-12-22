@@ -34,6 +34,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('integrations', [PostizController::class, 'integrations']);
         Route::post('schedule', [PostizController::class, 'schedule']);
         Route::get('posts', [PostizController::class, 'posts']);
+        Route::post('posts/{scheduledPost}/retry', [PostizController::class, 'retry']);
         Route::delete('posts/{scheduledPost}', [PostizController::class, 'destroy']);
     });
 });
