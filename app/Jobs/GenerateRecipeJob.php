@@ -10,7 +10,6 @@ use App\Services\AiTextService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 
 class GenerateRecipeJob implements ShouldQueue
 {
@@ -97,7 +96,7 @@ class GenerateRecipeJob implements ShouldQueue
                 'status' => 'completed',
             ]);
 
-        } catch (RuntimeException $e) {
+        } catch (\Throwable $e) {
             DB::reconnect();
 
             $generation->update([
@@ -106,5 +105,24 @@ class GenerateRecipeJob implements ShouldQueue
 
             throw $e;
         }
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(?\Throwable $exception): void
+    {
+        DB::reconnect();
+
+        $generation = Generation::find($this->generationId);
+
+        if ($generation && $generation->status !== 'completed') {
+            $generation->update(['status' => 'failed']);
+        }
+
+        \Log::error('GenerateRecipeJob failed', [
+            'generation_id' => $this->generationId,
+            'exception' => $exception?->getMessage(),
+        ]);
     }
 }
