@@ -1014,7 +1014,9 @@
 
                 showToast(message, type = 'success') {
                     this.toast = { message, type };
-                    setTimeout(() => this.toast = null, 4000);
+                    // Errors show for 10 seconds, success for 4 seconds
+                    const duration = type === 'error' ? 10000 : 4000;
+                    setTimeout(() => this.toast = null, duration);
                 },
 
                 async toggleShare(gen) {

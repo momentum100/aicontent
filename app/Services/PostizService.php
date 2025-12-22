@@ -21,18 +21,21 @@ class PostizService
 
     /**
      * Get all connected integrations (channels)
+     * Cached for 5 minutes to save API requests (30/hour limit)
      */
     public function getIntegrations(): array
     {
-        $response = Http::withHeaders([
-            'Authorization' => $this->apiKey,
-        ])->get($this->baseUrl . '/integrations');
+        return cache()->remember('postiz_integrations', 300, function () {
+            $response = Http::withHeaders([
+                'Authorization' => $this->apiKey,
+            ])->get($this->baseUrl . '/integrations');
 
-        if (!$response->successful()) {
-            throw new RuntimeException('Failed to fetch integrations: ' . $response->body());
-        }
+            if (!$response->successful()) {
+                throw new RuntimeException('Failed to fetch integrations: ' . $response->body());
+            }
 
-        return $response->json();
+            return $response->json();
+        });
     }
 
     /**
@@ -85,16 +88,21 @@ class PostizService
 
     /**
      * Schedule a post to Postiz
+     * Note: API limit is 30 requests/hour. Each image upload = 1 request.
      */
     public function schedulePost(
         Generation $generation,
         string $integrationId,
         string $channel,
-        ?Carbon $scheduledAt = null
+        ?Carbon $scheduledAt = null,
+        int $maxImages = 4
     ): array {
         // Upload images first - Postiz requires id and path for each image
+        // Limit images to save API requests (30/hour limit)
         $uploadedImages = [];
-        foreach ($generation->images ?? [] as $imagePath) {
+        $imagesToUpload = array_slice($generation->images ?? [], 0, $maxImages);
+
+        foreach ($imagesToUpload as $imagePath) {
             $uploadedImage = $this->uploadImage($imagePath);
             if ($uploadedImage && $uploadedImage['id'] && $uploadedImage['path']) {
                 $uploadedImages[] = $uploadedImage;
