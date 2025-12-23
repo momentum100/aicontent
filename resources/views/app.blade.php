@@ -627,29 +627,38 @@
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">When to post</label>
                         <div class="flex flex-wrap gap-2">
-                            <button type="button" @click="scheduleForm.schedule_type = 'now'"
+                            <button type="button" @click="scheduleForm.schedule_type = 'now'; scheduleForm.custom_date = ''"
                                 :class="scheduleForm.schedule_type === 'now' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                 class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors">
                                 Now
                             </button>
-                            <button type="button" @click="scheduleForm.schedule_type = 0"
+                            <button type="button" @click="setScheduleDate(0)"
                                 :class="scheduleForm.schedule_type === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                 class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors">
                                 Today
                             </button>
-                            <button type="button" @click="scheduleForm.schedule_type = 1"
+                            <button type="button" @click="setScheduleDate(1)"
                                 :class="scheduleForm.schedule_type === 1 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                 class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors">
                                 Tomorrow
                             </button>
                             <template x-for="day in [2, 3, 4, 5, 6, 7]" :key="day">
-                                <button type="button" @click="scheduleForm.schedule_type = day"
+                                <button type="button" @click="setScheduleDate(day)"
                                     :class="scheduleForm.schedule_type === day ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
                                     class="px-3 py-1.5 text-sm rounded-md font-medium transition-colors"
                                     x-text="'+' + day + ' days'">
                                 </button>
                             </template>
                         </div>
+                    </div>
+
+                    <!-- Date Picker (always visible for non-now) -->
+                    <div x-show="scheduleForm.schedule_type !== 'now'" class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input type="date" x-model="scheduleForm.custom_date"
+                            @change="scheduleForm.schedule_type = 'custom'"
+                            :min="new Date().toISOString().split('T')[0]"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     </div>
 
                     <!-- Time Selection (only for scheduled posts) -->
@@ -799,8 +808,9 @@
                     generation: null,
                     integration_id: '',
                     channel: '',
-                    schedule_type: 'now', // 'now' or days offset (0-7)
-                    schedule_time: '12:00'
+                    schedule_type: 'now', // 'now', days offset (0-7), or 'custom'
+                    schedule_time: '12:00',
+                    custom_date: ''
                 },
 
                 async init() {
@@ -1248,9 +1258,17 @@
                         integration_id: '',
                         channel: '',
                         schedule_type: 'now',
-                        schedule_time: '12:00'
+                        schedule_time: '12:00',
+                        custom_date: ''
                     };
                     this.showScheduleModal = true;
+                },
+
+                setScheduleDate(daysOffset) {
+                    this.scheduleForm.schedule_type = daysOffset;
+                    const date = new Date();
+                    date.setDate(date.getDate() + daysOffset);
+                    this.scheduleForm.custom_date = date.toISOString().split('T')[0];
                 },
 
 
@@ -1260,8 +1278,12 @@
                         // Calculate scheduled_at
                         let scheduledAt = null;
                         if (this.scheduleForm.schedule_type !== 'now') {
-                            const date = new Date();
-                            date.setDate(date.getDate() + this.scheduleForm.schedule_type);
+                            if (!this.scheduleForm.custom_date) {
+                                this.showToast('Please select a date', 'error');
+                                this.scheduleLoading = false;
+                                return;
+                            }
+                            const date = new Date(this.scheduleForm.custom_date);
                             const [hours, minutes] = this.scheduleForm.schedule_time.split(':');
                             date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
                             scheduledAt = date.toISOString();
