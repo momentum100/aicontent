@@ -17,9 +17,7 @@ class GenerationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $generations = $request->user()
-            ->generations()
-            ->with(['model', 'textModel', 'prompt'])
+        $generations = Generation::with(['model', 'textModel', 'prompt', 'user'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -28,11 +26,7 @@ class GenerationController extends Controller
 
     public function show(Request $request, Generation $generation): JsonResponse
     {
-        if ($generation->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        $generation->load(['model', 'textModel', 'prompt', 'titlePrompt', 'ingredientsPrompt']);
+        $generation->load(['model', 'textModel', 'prompt', 'titlePrompt', 'ingredientsPrompt', 'user']);
 
         return response()->json($generation);
     }

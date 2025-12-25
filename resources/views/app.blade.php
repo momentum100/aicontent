@@ -207,6 +207,7 @@
                                 :class="gen.status === 'failed' ? 'bg-red-50 border-red-200' : (gen.status === 'processing' ? 'bg-yellow-50 border-yellow-200' : '')">
                                 <div class="flex items-center gap-4 min-w-0 flex-wrap">
                                     <span class="text-xs text-gray-400 font-mono" x-text="'#' + gen.id"></span>
+                                    <span class="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium" x-text="gen.user?.name || 'Unknown'"></span>
                                     <span class="text-xs px-1.5 py-0.5 rounded font-medium"
                                         :class="{
                                             'bg-green-100 text-green-700': gen.status === 'completed',
@@ -223,15 +224,15 @@
                                     <span x-show="gen.text_model" class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded whitespace-nowrap" x-text="'Txt: ' + gen.text_model?.name"></span>
                                 </div>
                                 <div class="flex gap-1 flex-shrink-0">
-                                    <button x-show="gen.status === 'completed'" @click="openScheduleModal(gen)" class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200">Schedule</button>
-                                    <button @click="toggleStatus(gen)" class="text-xs px-2 py-1 rounded"
+                                    <button x-show="gen.status === 'completed' && gen.user_id === currentUserId" @click="openScheduleModal(gen)" class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200">Schedule</button>
+                                    <button x-show="gen.user_id === currentUserId" @click="toggleStatus(gen)" class="text-xs px-2 py-1 rounded"
                                         :class="gen.status === 'failed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'"
                                         x-text="gen.status === 'failed' ? 'Mark OK' : 'Mark Fail'"></button>
-                                    <button @click="toggleShare(gen)" class="text-xs px-2 py-1 rounded"
+                                    <button x-show="gen.user_id === currentUserId" @click="toggleShare(gen)" class="text-xs px-2 py-1 rounded"
                                         :class="gen.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                                         x-text="gen.is_public ? 'Shared' : 'Share'"></button>
                                     <button @click="viewGeneration(gen)" class="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">View</button>
-                                    <button @click="deleteGeneration(gen.id)" class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">Del</button>
+                                    <button x-show="gen.user_id === currentUserId" @click="deleteGeneration(gen.id)" class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">Del</button>
                                 </div>
                             </div>
                         </template>
@@ -768,6 +769,7 @@
     <script>
         function app() {
             return {
+                currentUserId: {{ auth()->id() }},
                 currentTab: window.location.hash.slice(1) || 'generate',
                 loading: false,
                 defaults: {},
